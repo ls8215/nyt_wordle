@@ -17,7 +17,7 @@
 
     // Function to fetch the words from the external file
     function fetchWords() {
-        return fetch('https://cheaderthecoder.github.io/5-Letter-words/words.txt')
+        return fetch('https://raw.githubusercontent.com/ls8215/nyt_wordle/refs/heads/main/words.txt')
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Status Code: ' + response.statusText);
@@ -115,13 +115,15 @@
         }
         let validWords = []
 
-        // for every word in words, check if it contains a letter that has a state of "absent". if not, add it to the validWords array
+        // for every word in words, check if it contains a letter that has a state of "present" or "correct". if it does, add it to the validWords array
         for (let word of words) {
             let isValid = true;
             for (let guess of guesses) {
-                if (guess.state === 'absent' && word.includes(guess.letter.toLowerCase())) {
-                    isValid = false;
-                    break;
+                if (guess.state === 'present' || guess.state === 'correct') {
+                    if (!word.includes(guess.letter.toLowerCase())) {
+                        isValid = false;
+                        break;
+                    }
                 }
             }
             if (isValid) {
@@ -154,8 +156,19 @@
                     }
                 }
             }
-
-            // If the word is still valid after all checks, keep it in the validWords array
+            if (!isValid) {
+                validWords = validWords.filter(w => w !== word);
+            }
+        }
+        // for each word in validWords, check if it contains a letter that has a state of "absent". if it does, remove it from the validWords array.
+        for (let word of validWords) {
+            let isValid = true;
+            for (let guess of guesses) {
+                if (guess.state === 'absent' && word.includes(guess.letter.toLowerCase())) {
+                    isValid = false;
+                    break;
+                }
+            }
             if (!isValid) {
                 validWords = validWords.filter(w => w !== word);
             }
