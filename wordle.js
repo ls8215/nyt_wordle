@@ -111,70 +111,36 @@
     // Function to filter possible words based on the guesses
     function filterPossibleWords() {
         if (guesses.length === 0) {
-            return;
+            return; 
         }
-        let validWords = []
+    
+        let validWords = words.filter(word => {
+            return guesses.every(guess => {
+                const letter = guess.letter.toLowerCase();
+                const position = guess.position;
+    
 
-        // for every word in words, check if it contains a letter that has a state of "present" or "correct". if it does, add it to the validWords array
-        for (let word of words) {
-            let isValid = true;
-            for (let guess of guesses) {
-                if (guess.state === 'present' || guess.state === 'correct') {
-                    if (!word.includes(guess.letter.toLowerCase())) {
-                        isValid = false;
-                        break;
+                if (guess.state === 'correct' && word[position] !== letter) {
+                    return false;
+                }
+
+                if (guess.state === 'present') {
+                    if (!word.includes(letter)) {
+                        return false; 
+                    }
+                    if (word[position] === letter) {
+                        return false; 
                     }
                 }
-            }
-            if (isValid) {
-                validWords.push(word);
-            }
-        }
 
-        // if any of the letters in the guesses have a state of "present", check if each word in the validWords array contains the letter in any position. if not, remove it from the validWords array.
-        for (let word of validWords) {
-            let isValid = false;
-            for (let guess of guesses) {
-                if (guess.state === 'present' && word.includes(guess.letter.toLowerCase())) {
-                    isValid = true;
-                    break;
+                if (guess.state === 'absent' && word.includes(letter)) {
+                    return false; 
                 }
-            }
-            if (!isValid) {
-                validWords = validWords.filter(w => w !== word);
-            }
-        }
+    
+                return true; 
+            });
+        });
 
-        // for each word in validWords, check if it contains the correct letters in the correct positions
-        for (let word of validWords) {
-            let isValid = true;
-            for (let guess of guesses) {
-                if (guess.state === 'correct') {
-                    if (word[guess.position] !== guess.letter.toLowerCase()) {
-                        isValid = false;
-                        break;
-                    }
-                }
-            }
-            if (!isValid) {
-                validWords = validWords.filter(w => w !== word);
-            }
-        }
-        // for each word in validWords, check if it contains a letter that has a state of "absent". if it does, remove it from the validWords array.
-        for (let word of validWords) {
-            let isValid = true;
-            for (let guess of guesses) {
-                if (guess.state === 'absent' && word.includes(guess.letter.toLowerCase())) {
-                    isValid = false;
-                    break;
-                }
-            }
-            if (!isValid) {
-                validWords = validWords.filter(w => w !== word);
-            }
-        }
-
-        // Update possible words display
         updatePossibleWords(validWords);
     }
 
@@ -199,14 +165,57 @@
         messageDiv.style.zIndex = '9999';
         messageDiv.style.maxWidth = '300px';
         messageDiv.style.wordWrap = 'break-word';
-        messageDiv.innerHTML = `
-            <h2 style="font-size: 24px; margin: 0;">NYT Wordle Helper</h2>
-            <br>
-            <h5 style="font-size: 18px; font-weight: bold; margin-bottom: 5px;">Possible words are:</h5>
-            <span id="possibleWords">Loading...</span><br><br>
-            <h5 style="font-size: 18px; font-weight: bold; margin-bottom: 5px;">Current guesses:</h5>
-            <span id="boardContent">Make your first guess. If you have done so, click enter.</span>
-        `;
+
+        const title = document.createElement('h2');
+        title.style.fontSize = '24px';
+        title.style.margin = '20';
+        title.innerText = "NYT Wordle Helper";
+
+        const possibleWordsTitle = document.createElement('h5');
+        possibleWordsTitle.style.fontSize = '18px';
+        possibleWordsTitle.style.fontWeight = 'bold';
+        possibleWordsTitle.style.marginBottom = '5px';
+        possibleWordsTitle.style.marginTop = '15px';
+        possibleWordsTitle.innerText = "Possible words are:";
+
+        const possibleWords = document.createElement('span');
+        possibleWords.id = 'possibleWords';
+        possibleWords.innerText = "Loading...";
+
+        const boardContentTitle = document.createElement('h5');
+        boardContentTitle.style.fontSize = '18px';
+        boardContentTitle.style.fontWeight = 'bold';
+        boardContentTitle.style.marginBottom = '5px';
+        boardContentTitle.style.marginTop = '15px';
+        boardContentTitle.innerText = "Current guesses:";
+
+        const boardContent = document.createElement('span');
+        boardContent.id = 'boardContent';
+        boardContent.innerText = "Make your first guess. If you have done so, click enter.";
+
+        // Create Filter button
+        const filterButton = document.createElement('button');
+        filterButton.id = 'filterButton';
+        filterButton.innerText = "Filter Words";
+        filterButton.style.backgroundColor = '#4CAF50';
+        filterButton.style.color = 'white';
+        filterButton.style.padding = '10px';
+        filterButton.style.border = 'none';
+        filterButton.style.cursor = 'pointer';
+        filterButton.style.fontSize = '14px';
+        filterButton.style.marginTop = '10px'; // Add some space between text and button
+
+        // Append all elements to the messageDiv
+        messageDiv.appendChild(title);
+        messageDiv.appendChild(possibleWordsTitle);
+        messageDiv.appendChild(possibleWords);
+        messageDiv.appendChild(document.createElement('br'));
+        messageDiv.appendChild(boardContentTitle);
+        messageDiv.appendChild(boardContent);
+        messageDiv.appendChild(document.createElement('br'));
+        messageDiv.appendChild(filterButton);
+
+        // Append messageDiv to the body
         document.body.appendChild(messageDiv);
 
         // Initialize guesses array
@@ -215,14 +224,23 @@
         // Start fetching the words from the external file
         fetchWords();
 
-        // Listen for clicks on the "Enter" button (aria-label="enter") to update the board content and filter words
-        const enterButton = document.querySelector('[aria-label="enter"]');
-        if (enterButton) {
-            enterButton.addEventListener('click', () => {
+        // Function to check the board content and update the guesses array
+        checkBoardContent();
+        
+
+        // Listen for keydown events on the document to update the board content and filter words
+        document.addEventListener('keydown', (event) => {
+            checkBoardContent();
+            if (event.key === 'Enter') {
                 checkBoardContent();
-                filterPossibleWords();
-            });
-        }
+            }
+        })
+
+        // Listen for Filter button
+        filterButton.addEventListener('click', () => {
+            checkBoardContent();
+            filterPossibleWords();
+        });
 
     }
 
