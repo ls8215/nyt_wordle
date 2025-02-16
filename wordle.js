@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         NYT Wordle Helper
 // @namespace    Shuang Luo
-// @version      0.1
+// @version      0.2
 // @description  A helper for New York Times Wordle game
 // @author       Shuang Luo
 // @match        https://www.nytimes.com/games/wordle/*
 // @grant        none
+// @updateURL    https://raw.githubusercontent.com/ls8215/nyt_wordle/main/wordle.js
 // ==/UserScript==
 
 (function() {
@@ -44,6 +45,11 @@
         }
     }
 
+    // Function to check if a letter aleady exists in the guesses array. if so, return true
+    function checkIfLetterExists(letter) {
+        return guesses.some(guess => guess.letter === letter);
+    }
+
     // Function to check each of the five board divs and display their content with styling
     function checkBoardContent() {
         const boardContent = [];
@@ -62,7 +68,13 @@
                     const letter = letterDiv.innerText;
                     const state = letterDiv.getAttribute('data-state');
 
-                    guesses.push({ letter, state, position: index });
+                    if (
+                        (state === 'absent' && !checkIfLetterExists(letter)) || 
+                        state === 'present' || 
+                        state === 'correct'
+                    ) {
+                        guesses.push({ letter, state, position: index });
+                    }
 
                     let status = '';
                     if (state === 'present') {
