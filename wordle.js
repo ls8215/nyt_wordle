@@ -6,6 +6,7 @@
 // @author       Shuang Luo
 // @match        https://www.nytimes.com/games/wordle/*
 // @grant        none
+// @downloadURL  https://raw.githubusercontent.com/ls8215/nyt_wordle/main/wordle.js
 // @updateURL    https://raw.githubusercontent.com/ls8215/nyt_wordle/main/wordle.js
 // ==/UserScript==
 
